@@ -1,44 +1,62 @@
 #!/bin/bash
 
+# Create a new user for running the service, or ensure the user exists
+if ! id "observability_user" &>/dev/null; then
+    sudo useradd -m -s /bin/bash observability_user
+    echo "User observability_user created."
+else
+    echo "User observability_user already exists."
+fi
+
 # Create the service script
-cat << 'EOL' > /usr/local/bin/system-script.sh
+cat << 'EOF' > /usr/local/bin/system-script.sh
 #!/bin/bash
-echo "Observability Service is Running"
-exit 0
-EOL
+# This script continuously checks the status of observability.service
+while true; do
+  # Output the current status to a log file
+  systemctl status observability.service > /var/log/observability/logs.log
+  # Sleep for an hour before repeating the process
+  sleep 3600
+done
+EOF
 
 # Make the script executable
 sudo chmod +x /usr/local/bin/system-script.sh
 
-# Create the logs directory
+# Ensure the log directory exists and set permissions
 sudo mkdir -p /var/log/observability
+sudo chown observability_user:observability_user /var/log/observability
+sudo chmod 755 /var/log/observability
 
 # Create the systemd service file
-cat << 'EOL' > /etc/systemd/system/observability.service
+cat << 'EOF' > /etc/systemd/system/observability.service
 [Unit]
-Description=Experimenting with systemd observability
+Description=Service to monitor the status of observability.service
 
 [Service]
-User=ec2-user
-WorkingDirectory=/etc/systemd/system
+User=observability_user
 ExecStart=/usr/local/bin/system-script.sh
 Restart=always
 RestartSec=3
-StandardOutput=file:/var/log/observability/logs.log
-StandardError=file:/var/log/observability/logs.log
 
 [Install]
 WantedBy=multi-user.target
-EOL
+EOF
 
-# Reload systemd to read the new service
+# Set permissions for the service file
+sudo chown root:root /etc/systemd/system/observability.service
+sudo chmod 644 /etc/systemd/system/observability.service
+
+# Reload systemd to recognize the new or changed unit file
 sudo systemctl daemon-reload
 
-# Enable the service to start on boot
+# Enable the service to start at boot
 sudo systemctl enable observability.service
 
 # Start the service immediately
 sudo systemctl start observability.service
+
+echo "Service setup complete. Observability service is now running under non-root user: observability_user."
 
 # Install CloudWatch Agent
 sudo yum install -y amazon-cloudwatch-agent
