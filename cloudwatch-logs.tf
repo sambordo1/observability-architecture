@@ -40,3 +40,57 @@ resource "aws_cloudwatch_dashboard" "observability_dashboard" {
 }
 EOF
 }
+
+// ----------------------------------------------------------------------------
+// Create a Metric Filter for Log Stream Service
+// ----------------------------------------------------------------------------
+resource "aws_cloudwatch_log_metric_filter" "all_logs_metric_filter" {
+  name           = "AllLogsMetricFilter"
+  log_group_name = aws_cloudwatch_log_group.observability_log_group.name
+  pattern        = "" // Empty pattern matches all log events
+
+  metric_transformation {
+    namespace     = "CustomLogMetrics"
+    name          = "AllLogsCount"
+    value         = "1"
+    default_value = "0"
+  }
+}
+
+// ----------------------------------------------------------------------------
+// Create a CloudWatch Alarm for Service Logs
+// ----------------------------------------------------------------------------
+resource "aws_cloudwatch_metric_alarm" "observability_service_alarm" {
+  alarm_name          = "ObservabilityServiceAlarm"
+  alarm_description   = "Observability Service is still running"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = 1
+  metric_name         = "AllLogsCount"
+  namespace           = "CustomLogMetrics"
+  period              = 300
+  statistic           = "Sum"
+  threshold           = 1
+  actions_enabled     = true
+  alarm_actions       = [aws_sns_topic.log_notification_topic.arn]
+  # alarm_actions             = ["arn:aws:sns:us-east-1:170427903096:log-notification-topic"]
+  ok_actions                = []
+  insufficient_data_actions = []
+  treat_missing_data        = "missing"
+}
+
+
+// ----------------------------------------------------------------------------
+// Create SNS Topic for Stopped Service
+// ----------------------------------------------------------------------------
+resource "aws_sns_topic" "log_notification_topic" {
+  name = "log-notification-topic"
+}
+
+// ----------------------------------------------------------------------------
+// Create SNS Topic Subscription
+// ----------------------------------------------------------------------------
+resource "aws_sns_topic_subscription" "log_notification_email_subscription" {
+  topic_arn = aws_sns_topic.log_notification_topic.arn
+  protocol  = "email"
+  endpoint  = "sambordo1@gmail.com"
+}
