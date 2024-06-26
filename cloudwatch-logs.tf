@@ -61,21 +61,20 @@ resource "aws_cloudwatch_log_metric_filter" "all_logs_metric_filter" {
 // Create a CloudWatch Alarm for Service Logs
 // ----------------------------------------------------------------------------
 resource "aws_cloudwatch_metric_alarm" "observability_service_alarm" {
-  alarm_name          = "ObservabilityServiceAlarm"
-  alarm_description   = "Observability Service is still running"
-  comparison_operator = "GreaterThanOrEqualToThreshold"
-  evaluation_periods  = 1
-  metric_name         = "AllLogsCount"
-  namespace           = "CustomLogMetrics"
-  period              = 300
-  statistic           = "Sum"
-  threshold           = 1
-  actions_enabled     = true
-  alarm_actions       = [aws_sns_topic.log_notification_topic.arn]
-  # alarm_actions             = ["arn:aws:sns:us-east-1:170427903096:log-notification-topic"]
+  alarm_name                = "ObservabilityServiceAlarm"
+  alarm_description         = "Observability Service is still running"
+  comparison_operator       = "GreaterThanOrEqualToThreshold"
+  evaluation_periods        = 1
+  metric_name               = "AllLogsCount"
+  namespace                 = "CustomLogMetrics"
+  period                    = 300
+  statistic                 = "Sum"
+  threshold                 = 1
+  actions_enabled           = true
+  alarm_actions             = [aws_sns_topic.log_notification_topic.arn, aws_lambda_function.lambda_notifier.arn]
   ok_actions                = []
   insufficient_data_actions = []
-  treat_missing_data        = "missing"
+  treat_missing_data        = "notBreaching"
 }
 
 

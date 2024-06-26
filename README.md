@@ -31,4 +31,15 @@
     - Creates a Cloudwatch log group named /observability/ to match the cloudwatch config file
     - Creates a Cloudwatch log stream named logs to match the cloudwatch config file
 
+## (5) Create Cloudwatch dashboard using Terraform
 
+    - Display the logs in the Cloudwatch dashboard
+
+## (6) Create Cloudwatch alarm using Terraform
+
+    - Have the alarm go off when certain systemd logs are sent to Cloudwatch
+    - The alarm will send notifications to an SNS topic ( a lambda function)
+
+## (7) Create lambda function that sends message to Mattermost when logs are sent to Cloudwatch
+
+    - Python lambda function
